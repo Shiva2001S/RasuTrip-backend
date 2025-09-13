@@ -16,7 +16,6 @@ module.exports.login = async (req, res) => {
 
     const isPasswordCorrect = await bcrypt.compare(password, data[0].password);
 
-    // if (data[0].email == email && data[0].password == password) {
     if (isPasswordCorrect) {
         const token = jwt.sign({ email, password }, process.env.secretKey, { expiresIn: "1d" })
 
