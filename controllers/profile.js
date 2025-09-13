@@ -6,7 +6,7 @@ module.exports.login = async (req, res) => {
     try {
       const { email, password } = req.body;
     
-    const data = await User.find({ 'email': email, 'password': password });
+    const data = await User.find({ email: email });
 
     if (!data) {
         return res.status(404).json({
@@ -14,11 +14,11 @@ module.exports.login = async (req, res) => {
         })
     }
 
-    if (data[0].email == email && data[0].password == password) {
-        console.log('secret key is ', process.env.secretKey);
+    const isPasswordCorrect = await bcrypt.compare(password, data[0].password);
 
+    // if (data[0].email == email && data[0].password == password) {
+    if (isPasswordCorrect) {
         const token = jwt.sign({ email, password }, process.env.secretKey, { expiresIn: "1d" })
-        console.log(token);
 
         return res.status(200).json({
             message: "successfull",
@@ -48,10 +48,12 @@ module.exports.register = async (req, res) => {
         })
     }
 
+    const hasPassword = await bcrypt.hash(password, 10);
+
     const newUser = new User({
         name,
         email,
-        password
+        password : hasPassword
     })
 
     const data = await newUser.save();
@@ -63,7 +65,7 @@ module.exports.register = async (req, res) => {
 }
 
 module.exports.getData = async (req, res) => {
-    const { email, password } = req.user;
+    const { email } = req.user;
     const data = await User.find({ email});
 
     return res.status(200).json({
@@ -74,8 +76,10 @@ module.exports.getData = async (req, res) => {
 
 module.exports.updatePassword = async (req, res) => {
     const user = req.user;
+
+    const hashPassword = await bcrypt.hash(req.body.newPassword, 10);
     
-    const data = await User.updateOne({ email: user.email }, {name : req.body.name, email : req.body.email, password : req.body.newPassword});
+    const data = await User.updateOne({ email: user.email }, {name : req.body.name, email : req.body.email, password : hashPassword});
 
     return res.status(200).json({
         message: "successful",
